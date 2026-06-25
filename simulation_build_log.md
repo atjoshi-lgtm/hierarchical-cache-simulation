@@ -50,3 +50,10 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
 * **Decisions:** * Implemented `SimulationEngine` to orchestrate the Edge -> Parent -> Origin flow.
   * Enforced minimalist design: the simulation loop relies entirely on the internal state management of the `ByteAwareLRUCache` models, avoiding bloated validation checks.
   * Added environment execution rules to `AGENT.md`.
+
+## Phase 6: Executable Entry Point Built
+* **Status:** Complete.
+* **Component:** `scripts/run_simulation.py`
+* **Decisions:** * Created a minimalist execution script to wire the Data, Models, and Engine layers together.
+  * Hardcoded initial testing variables (10MB Edge, 50MB Parent) to rapidly validate the "chopped head" physics on the `data/request_seq_small` log file.
+  * Used standard JSON output for clean metric reporting.
