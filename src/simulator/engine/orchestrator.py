@@ -14,7 +14,7 @@ class SimulationEngine:
 		self.trace_file_path = trace_file_path
 		self.total_requests = 0
 
-	def run(self) -> dict[str, int]:
+	def run(self) -> dict[str, float]:
 		for request in parse_trace_file(self.trace_file_path):
 			self.total_requests += 1
 
@@ -28,6 +28,11 @@ class SimulationEngine:
 			self.parent_cache.put(request.cachekey, request.file_size)
 			self.edge_cache.put(request.cachekey, request.file_size)
 
+		duplication_byte_rate = (
+			self.parent_cache.byte_overlap_with(self.edge_cache) / self.parent_cache.current_bytes
+			if self.parent_cache.current_bytes > 0 else 0.0
+		)
+
 		return {
 			"total_requests": self.total_requests,
 			"edge_hits": self.edge_cache.hits,
@@ -36,4 +41,5 @@ class SimulationEngine:
 			"parent_hits": self.parent_cache.hits,
 			"parent_misses": self.parent_cache.misses,
 			"parent_evictions": self.parent_cache.evictions,
+			"duplication_byte_rate": duplication_byte_rate,
 		}

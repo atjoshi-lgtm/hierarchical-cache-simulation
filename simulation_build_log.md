@@ -57,3 +57,18 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
 * **Decisions:** * Created a minimalist execution script to wire the Data, Models, and Engine layers together.
   * Hardcoded initial testing variables (10MB Edge, 50MB Parent) to rapidly validate the "chopped head" physics on the `data/request_seq_small` log file.
   * Used standard JSON output for clean metric reporting.
+
+## Phase 6.5: Trace Data Analysis & Visualization
+* **Status:** Complete.
+* **Component:** `scripts/analyze_trace.py`
+* **Decisions:** * Created an analysis script to establish baseline trace metrics (Working Set Size, time span, unique objects, size distribution).
+  * Leveraged `matplotlib` and `numpy` to generate a log-log plot of the complete Rank vs. Frequency popularity distribution (`popularity_distribution.png`), allowing us to visually verify the Zipfian skew of the CDN traffic.
+  * Maintained $O(1)$ memory complexity during the log parsing phase by reusing the Data Layer generator.
+
+## Phase 6.6: Experiment Management Architecture
+* **Status:** Complete.
+* **Decisions:** * Updated `AGENT.md` to enforce strict MLOps output rules: all outputs go to `experiments/<experiment_name>/` and must use parameterized file/folder naming.
+
+## Phase 6.7: Raw Data Preservation Rule
+* **Status:** Complete.
+* **Decisions:** * Updated `AGENT.md` to strictly mandate saving raw data (`.csv`/`.json`) alongside any generated plots.

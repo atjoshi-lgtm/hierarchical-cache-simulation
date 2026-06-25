@@ -50,3 +50,7 @@ class ByteAwareLRUCache:
 			_, evicted_size = self._entries.popitem(last=False)
 			self.current_bytes -= evicted_size
 			self.evictions += 1
+
+	def byte_overlap_with(self, other: 'ByteAwareLRUCache') -> int:
+		"""Return the total bytes of objects in other that are also present in this cache."""
+		return sum(size for key, size in other._entries.items() if key in self._entries)
