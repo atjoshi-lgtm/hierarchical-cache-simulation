@@ -14,3 +14,4 @@ You are an Expert Systems Architect and Python Developer working on a Trace-Driv
 * **Hierarchy:** Client -> Edge Cache -> Parent Cache -> Origin.
 * **Eviction:** Based on `file-size` bytes, not item counts. 
 * **Mutability:** The `file-size` for a specific `cachekey` can change mid-simulation. Cache models must handle byte-deltas on updates.
+
