@@ -37,3 +37,16 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
 * **Decisions:** * Implemented `ByteAwareLRUCache` using `collections.OrderedDict` to guarantee $O(1)$ time complexity for hits and evictions.
   * Added bypass logic for objects larger than the cache's maximum capacity to prevent catastrophic cache wiping.
   * Successfully handled the object mutability rule by calculating byte-deltas dynamically during `put()` operations.
+
+## Phase 4: Core Physics Validation
+* **Status:** Complete.
+* **Component:** `tests/test_models.py`
+* **Decisions:** * Implemented rigorous `pytest` unit tests for the `ByteAwareLRUCache`.
+  * Verified edge cases: size-based evictions, mid-simulation object mutation (size updates), and the large-object bypass mechanic.
+
+## Phase 5: Engine Layer Built
+* **Status:** Complete.
+* **Component:** `src/simulator/engine/orchestrator.py`
+* **Decisions:** * Implemented `SimulationEngine` to orchestrate the Edge -> Parent -> Origin flow.
+  * Enforced minimalist design: the simulation loop relies entirely on the internal state management of the `ByteAwareLRUCache` models, avoiding bloated validation checks.
+  * Added environment execution rules to `AGENT.md`.
