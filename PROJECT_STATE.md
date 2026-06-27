@@ -1,11 +1,14 @@
 # Project State
 
 ## Objective
-This repository implements a trace-driven, 2-tier CDN cache simulator (Client -> Edge -> Parent -> Origin) to study byte-aware LRU behavior and the chopped-head duplication effect when cache capacity is split across hierarchy levels.
+This repository implements a trace-driven, 2-tier CDN cache simulator (Client -> Edge -> Parent -> Origin) for both single-edge and three-edge configurations, to study byte-aware LRU behavior and the chopped-head duplication effect when cache capacity is split across hierarchy levels.
 
 ## Current Capabilities
 - Parse large trace files lazily with generator-based streaming in the data layer.
 - Simulate a single Edge/Parent configuration and save reproducible run artifacts.
+- Simulate three edge caches feeding one shared parent cache with strict common-window alignment.
+- Merge multi-edge requests deterministically (edge1, edge2, edge3 for equal timestamps).
+- Emit structured progress logs during long multi-edge runs.
 - Analyze one trace and produce:
   - summary metrics JSON
   - rank-frequency popularity CSV
@@ -50,12 +53,23 @@ python -m scripts.edge_sweep_experiment \
   --experiment-name edge_sweep
 ```
 
+Three-edge simulation run:
+
+```bash
+python -m scripts.run_multi_edge_simulation \
+  --trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 data/three_edges/request_seq_edge_3 \
+  --edge-gb 24 \
+  --parent-gb 120 \
+  --experiment-name three_edge_run
+```
+
 # Data Format
 The input is a massive plain text log file containing pre-processed request traces. 
 * Lines starting with `#` are metadata/comments and must be ignored.
 * Data lines are colon-separated (`:`) and contain 14 fields.
 * The format is: `map:serial:timestamp:cachekey:file-size:bytes-served:cpcode:objstatus1:arlid:network:mapname:region:vcd-id:product`
 * For our simulation, the critical fields are `timestamp` (index 2), `cachekey` (index 3, the unique object ID), and `file-size` (index 4, the bytes required to store it).
+* Three-edge traces in `data/three_edges/` are not guaranteed to be strictly timestamp-sorted.
 
 ## Metrics and Definitions
 Core simulation counters (from engine output):
@@ -63,6 +77,13 @@ Core simulation counters (from engine output):
 - edge_hits, edge_misses, edge_evictions
 - parent_hits, parent_misses, parent_evictions
 - duplication_byte_rate
+
+Additional multi-edge counters:
+- edge_1_hits/edge_1_misses/edge_1_evictions
+- edge_2_hits/edge_2_misses/edge_2_evictions
+- edge_3_hits/edge_3_misses/edge_3_evictions
+- duplication_overlap_union_bytes
+- edge_i_parent_overlap_bytes and edge_i_duplication_byte_rate
 
 Definitions used by the sweep script:
 - edge_hit_rate = edge_hits / total_requests
@@ -73,6 +94,10 @@ Definitions used by the sweep script:
 ## Current Experiment Scope
 - Trace input: configurable, default is data/request_seq_small.
 - Single-run script supports one Edge size + one Parent size.
+- Multi-edge run supports exactly three traces plus a shared parent.
+- Multi-edge run computes strict 3-way overlap window and filters each trace to inclusive bounds [start, end].
+- Multi-edge tie-break policy at equal timestamp is deterministic edge order (1 -> 2 -> 3).
+- Multi-edge CLI supports progress control using `--log-every` and merge strategy with `--assume-sorted`.
 - Sweep script currently varies Edge size over a provided list while holding Parent fixed.
 - Duplication metric currently reported as final-state overlap ratio at run end.
 
@@ -88,6 +113,9 @@ Trace analysis directory pattern:
 Edge sweep directory pattern:
 - experiments/<experiment_name>/trace_<trace_name>_parent_<parent>GB_edges_<min>-<max>GB/
 
+Three-edge directory pattern:
+- experiments/<experiment_name>/three_edges_edge_<edge>GB_parent_<parent>GB/
+
 Typical artifacts per run:
 - run.log
 - config_used.json
@@ -96,22 +124,24 @@ Typical artifacts per run:
 
 ## Source-of-Truth Code Map
 - src/simulator/data_access/parser.py: generator trace parser and RequestTrace model.
+- src/simulator/data_access/trace_aligner.py: overlap-window computation, window filtering, and deterministic multi-trace merge.
 - src/simulator/models/lru_cache.py: byte-aware LRU cache physics and overlap metric helper.
 - src/simulator/engine/orchestrator.py: request flow orchestration and top-level counters.
+- src/simulator/engine/multi_edge_orchestrator.py: three-edge shared-parent orchestration and multi-edge metrics.
 - scripts/run_simulation_demo.py: reproducible single-configuration simulation entry point.
+- scripts/run_multi_edge_simulation.py: reproducible three-edge simulation entry point with progress logging.
 - scripts/analyze_trace.py: trace summary + popularity distribution artifacts.
 - scripts/edge_sweep_experiment.py: fixed-parent edge sweep experiment and 4-metric plot.
 
 ## Known Gaps / Cleanup Items
-- README currently references scripts/run_simulation.py, but active script is scripts/run_simulation_demo.py.
-- tests/test_engine.py is empty.
-- tests/test_data_access.py is empty.
+- Multi-edge default merge path sorts in-window records in memory to handle unsorted traces; this can increase memory use for very large overlap windows.
+- Parent-size sweep wrapper for multi-edge path is still pending.
 - experiments/ currently contains top-level PNG files from earlier runs; newer scripts now use nested experiment directories.
 
 ## Immediate Next Priorities
-1. Update README run command to match current executable scripts.
-2. Add engine and parser tests (integration checks + malformed trace handling).
-3. Add a small wrapper script for multi-parent sweeps (repeat edge sweep for several fixed parent sizes).
+1. Add a parent-size sweep wrapper for the multi-edge path.
+2. Add optional external-sort/pre-sort utilities for large multi-edge windows.
+3. Add comparison plotting for per-edge and aggregate multi-edge metrics.
 
 ## Quick Handoff Notes for Human or AI
 - Read this file first, then run one canonical command above to validate environment.

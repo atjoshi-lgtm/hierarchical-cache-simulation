@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import time
 
 from src.simulator.data_access.trace_aligner import (
     compute_overlap_window,
@@ -32,6 +33,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--edge-gb", type=int, default=1000)
     parser.add_argument("--parent-gb", type=int, default=5000)
+    parser.add_argument(
+        "--log-every",
+        type=int,
+        default=1_000_000,
+        help="Emit progress after this many processed requests (0 disables periodic logs).",
+    )
     parser.add_argument(
         "--assume-sorted",
         action="store_true",
@@ -67,13 +74,55 @@ def main() -> None:
     os.makedirs(run_dir, exist_ok=True)
     logger = setup_logging(run_dir)
 
+    logger.info("Starting multi-edge simulation run")
+    logger.info("Trace files: %s", ", ".join(args.trace_files))
+    logger.info(
+        "Capacities: edge=%d GB (each), parent=%d GB",
+        args.edge_gb,
+        args.parent_gb,
+    )
+    logger.info("Computing common overlap window...")
+
     overlap = compute_overlap_window(args.trace_files)
+    logger.info(
+        "Overlap window [start,end]: [%d,%d]",
+        overlap.start_timestamp,
+        overlap.end_timestamp,
+    )
+    for item in overlap.trace_bounds:
+        logger.info(
+            "Trace bounds %s -> min=%d max=%d parsed=%d skipped=%d",
+            item.file_path,
+            item.min_timestamp,
+            item.max_timestamp,
+            item.parsed_records,
+            item.skipped_records,
+        )
+
+    logger.info("Preparing merged request stream (assume_sorted=%s)...", args.assume_sorted)
     merged_requests = merge_aligned_traces(
         args.trace_files,
         overlap.start_timestamp,
         overlap.end_timestamp,
         assume_sorted=args.assume_sorted,
     )
+    logger.info("Merged stream ready. Running simulation engine...")
+
+    start_time = time.perf_counter()
+
+    def _log_progress(progress: dict[str, float]) -> None:
+        elapsed = time.perf_counter() - start_time
+        throughput = (
+            progress["processed_requests"] / elapsed if elapsed > 0 else 0.0
+        )
+        logger.info(
+            "Progress processed=%d edge_hits=%d parent_hits=%d global_hit_rate=%.6f throughput=%.0f req/s",
+            int(progress["processed_requests"]),
+            int(progress["edge_hits"]),
+            int(progress["parent_hits"]),
+            progress["global_hit_rate"],
+            throughput,
+        )
 
     edge_caches = {
         edge_id: ByteAwareLRUCache(args.edge_gb * GB)
@@ -81,13 +130,21 @@ def main() -> None:
     }
     parent_cache = ByteAwareLRUCache(args.parent_gb * GB)
 
-    engine = MultiEdgeSimulationEngine(edge_caches, parent_cache, merged_requests)
+    engine = MultiEdgeSimulationEngine(
+        edge_caches=edge_caches,
+        parent_cache=parent_cache,
+        merged_requests=merged_requests,
+        progress_interval=args.log_every,
+        progress_callback=_log_progress,
+    )
     metrics = engine.run()
+    elapsed_seconds = time.perf_counter() - start_time
 
     config = {
         "trace_files": args.trace_files,
         "edge_gb": args.edge_gb,
         "parent_gb": args.parent_gb,
+        "log_every": args.log_every,
         "assume_sorted": args.assume_sorted,
         "experiment_name": args.experiment_name,
         "output_root": args.output_root,
@@ -120,6 +177,7 @@ def main() -> None:
         overlap.start_timestamp,
         overlap.end_timestamp,
     )
+    logger.info("Elapsed time: %.2f seconds", elapsed_seconds)
     logger.info("Metrics: %s", json.dumps(metrics, sort_keys=True))
     logger.info("Saved metrics JSON: %s", metrics_path)
 

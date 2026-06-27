@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Callable, Iterable
 
 from src.simulator.data_access.parser import RequestTrace
 from src.simulator.models.lru_cache import ByteAwareLRUCache
@@ -14,6 +14,8 @@ class MultiEdgeSimulationEngine:
     edge_caches: dict[int, ByteAwareLRUCache]
     parent_cache: ByteAwareLRUCache
     merged_requests: Iterable[tuple[int, RequestTrace]]
+    progress_interval: int = 0
+    progress_callback: Callable[[dict[str, float]], None] | None = None
 
     def run(self) -> dict[str, float]:
         total_requests = 0
@@ -26,14 +28,17 @@ class MultiEdgeSimulationEngine:
             total_requests += 1
 
             if edge_cache.get(request.cachekey):
+                self._emit_progress(total_requests)
                 continue
 
             if self.parent_cache.get(request.cachekey):
                 edge_cache.put(request.cachekey, request.file_size)
+                self._emit_progress(total_requests)
                 continue
 
             self.parent_cache.put(request.cachekey, request.file_size)
             edge_cache.put(request.cachekey, request.file_size)
+            self._emit_progress(total_requests)
 
         parent_current_bytes = self.parent_cache.current_bytes
         overlap_union_bytes = self._parent_overlap_with_edge_union()
@@ -64,6 +69,24 @@ class MultiEdgeSimulationEngine:
             )
 
         return metrics
+
+    def _emit_progress(self, total_requests: int) -> None:
+        if self.progress_callback is None:
+            return
+        if self.progress_interval <= 0:
+            return
+        if total_requests % self.progress_interval != 0:
+            return
+
+        edge_hits = sum(cache.hits for cache in self.edge_caches.values())
+        parent_hits = self.parent_cache.hits
+        progress = {
+            "processed_requests": total_requests,
+            "edge_hits": edge_hits,
+            "parent_hits": parent_hits,
+            "global_hit_rate": (edge_hits + parent_hits) / total_requests,
+        }
+        self.progress_callback(progress)
 
     def _parent_overlap_with_edge_union(self) -> int:
         """Return parent bytes that also exist in at least one edge cache."""

@@ -81,3 +81,14 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
   * Built an experiment runner that fixes Parent at 240 GB and sweeps Edge sizes `[6, 12, 24, 48, 96, 120]` GB.
   * Generated `experiments/experiment_results_parent_120GB.png` and `experiments/experiment_results_edge_sweep_240GB.png` with four core curves: Edge Hit Rate, Parent Conditional Hit Rate, Global Hit Rate, and Duplication Byte Rate.
   * Observed key behavior: global hit rate remained nearly flat (~0.844-0.847), while duplication rose sharply with larger edge allocations (up to ~0.460 at 120 GB).
+
+## Phase 8: Three-Edge Shared-Parent Simulation
+* **Status:** Complete.
+* **Components:** `src/simulator/data_access/trace_aligner.py`, `src/simulator/engine/multi_edge_orchestrator.py`, `scripts/run_multi_edge_simulation.py`, `tests/test_data_access.py`, `tests/test_engine.py`
+* **Decisions:**
+  * Added strict overlap-window computation across three edge traces and inclusive filtering rule [start, end].
+  * Added deterministic merge order for equal timestamps: edge1 -> edge2 -> edge3.
+  * Added robust default handling for unsorted traces by deterministic in-memory sort of in-window records.
+  * Added optional streaming merge path for sorted traces via `--assume-sorted`.
+  * Added structured progress logging for long runs, including periodic throughput and hit-rate checkpoints.
+  * Extended metrics with per-edge counters plus union-based duplication overlap statistics.
