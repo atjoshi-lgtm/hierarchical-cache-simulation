@@ -17,7 +17,7 @@ python -m pip install -e .
 
 ```bash
 python -m scripts.run_simulation_demo \
-	--trace-file data/request_seq_small \
+	--trace-file data/single_edge/request_seq_small \
 	--edge-gb 1000 \
 	--parent-gb 5000 \
 	--experiment-name single_run
@@ -27,7 +27,7 @@ python -m scripts.run_simulation_demo \
 
 ```bash
 python -m scripts.analyze_trace \
-	--trace-file data/request_seq_small \
+	--trace-file data/single_edge/request_seq_small \
 	--experiment-name trace_analysis
 ```
 
@@ -35,7 +35,7 @@ python -m scripts.analyze_trace \
 
 ```bash
 python -m scripts.edge_sweep_experiment \
-	--trace-file data/request_seq_small \
+	--trace-file data/single_edge/request_seq_small \
 	--parent-gb 120 \
 	--edge-sizes-gb 6,12,24,48,96,120 \
 	--experiment-name edge_sweep

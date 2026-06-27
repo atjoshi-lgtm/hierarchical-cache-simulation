@@ -50,6 +50,13 @@ python -m scripts.edge_sweep_experiment \
   --experiment-name edge_sweep
 ```
 
+# Data Format
+The input is a massive plain text log file containing pre-processed request traces. 
+* Lines starting with `#` are metadata/comments and must be ignored.
+* Data lines are colon-separated (`:`) and contain 14 fields.
+* The format is: `map:serial:timestamp:cachekey:file-size:bytes-served:cpcode:objstatus1:arlid:network:mapname:region:vcd-id:product`
+* For our simulation, the critical fields are `timestamp` (index 2), `cachekey` (index 3, the unique object ID), and `file-size` (index 4, the bytes required to store it).
+
 ## Metrics and Definitions
 Core simulation counters (from engine output):
 - total_requests
