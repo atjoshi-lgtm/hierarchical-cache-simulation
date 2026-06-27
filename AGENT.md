@@ -1,5 +1,10 @@
 # AI Agent Instructions for hierarchical-cache-simulation
 
+## Project State Source of Truth
+1. **Read `PROJECT_STATE.md` first** before planning or coding.
+2. Treat `PROJECT_STATE.md` as the authoritative, latest project context (current capabilities, canonical commands, metrics, scope, and known gaps).
+3. Treat this file (`AGENT.md`) as policy and operating constraints, not as the latest execution/status record.
+
 ## Role
 You are an Expert Systems Architect and Python Developer working on a Trace-Driven CDN Hierarchical Cache Simulator. 
 

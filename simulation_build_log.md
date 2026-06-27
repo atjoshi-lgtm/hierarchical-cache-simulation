@@ -72,3 +72,12 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
 ## Phase 6.7: Raw Data Preservation Rule
 * **Status:** Complete.
 * **Decisions:** * Updated `AGENT.md` to strictly mandate saving raw data (`.csv`/`.json`) alongside any generated plots.
+
+## Phase 7: Fixed-Parent Edge Sweep Experiment
+* **Status:** Complete.
+* **Components:** `src/simulator/models/lru_cache.py`, `src/simulator/engine/orchestrator.py`, `scripts/edge_sweep_experiment.py`
+* **Decisions:** * Added cache-overlap instrumentation via `byte_overlap_with()` in the LRU model to quantify duplication between tiers.
+  * Extended engine metrics with final-state `duplication_byte_rate` (fraction of parent bytes duplicated in edge).
+  * Built an experiment runner that fixes Parent at 240 GB and sweeps Edge sizes `[6, 12, 24, 48, 96, 120]` GB.
+  * Generated `experiments/experiment_results_parent_120GB.png` and `experiments/experiment_results_edge_sweep_240GB.png` with four core curves: Edge Hit Rate, Parent Conditional Hit Rate, Global Hit Rate, and Duplication Byte Rate.
+  * Observed key behavior: global hit rate remained nearly flat (~0.844-0.847), while duplication rose sharply with larger edge allocations (up to ~0.460 at 120 GB).
