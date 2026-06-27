@@ -20,16 +20,17 @@ GB = 1_000_000_000
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run a three-edge CDN hierarchy simulation with strict overlap filtering."
+        description="Run a multi-edge CDN hierarchy simulation with strict overlap filtering."
     )
     parser.add_argument(
         "--trace-files",
-        nargs=3,
+        nargs="+",
         default=[
             "data/three_edges/request_seq_edge_1",
             "data/three_edges/request_seq_edge_2",
             "data/three_edges/request_seq_edge_3",
         ],
+        help="One or more edge trace files.",
     )
     parser.add_argument("--edge-gb", type=int, default=1000)
     parser.add_argument("--parent-gb", type=int, default=5000)
@@ -67,14 +68,17 @@ def setup_logging(run_dir: Path) -> logging.Logger:
 
 def main() -> None:
     args = parse_args()
+    if not args.trace_files:
+        raise ValueError("At least one trace file must be provided via --trace-files.")
 
     run_dir = Path(args.output_root) / args.experiment_name / (
-        f"three_edges_edge_{args.edge_gb}GB_parent_{args.parent_gb}GB"
+        f"{len(args.trace_files)}_edges_edge_{args.edge_gb}GB_parent_{args.parent_gb}GB"
     )
     os.makedirs(run_dir, exist_ok=True)
     logger = setup_logging(run_dir)
 
     logger.info("Starting multi-edge simulation run")
+    logger.info("Number of edges: %d", len(args.trace_files))
     logger.info("Trace files: %s", ", ".join(args.trace_files))
     logger.info(
         "Capacities: edge=%d GB (each), parent=%d GB",
@@ -166,12 +170,12 @@ def main() -> None:
         json.dump(config, config_file, indent=2)
 
     metrics_path = run_dir / (
-        f"metrics_three_edges_edge_{args.edge_gb}GB_parent_{args.parent_gb}GB.json"
+        f"metrics_{len(args.trace_files)}_edges_edge_{args.edge_gb}GB_parent_{args.parent_gb}GB.json"
     )
     with open(metrics_path, "w", encoding="utf-8") as metrics_file:
         json.dump(metrics, metrics_file, indent=2)
 
-    logger.info("Three-edge simulation completed")
+    logger.info("Multi-edge simulation completed")
     logger.info(
         "Common overlap window [start,end]: [%d,%d]",
         overlap.start_timestamp,

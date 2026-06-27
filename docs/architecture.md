@@ -12,9 +12,9 @@ This document defines the strict, modular layer boundaries for the hierarchical-
 ## Multi-Edge Extensions
 
 * **Trace Alignment Module (`src/simulator/data_access/trace_aligner.py`):**
-	* Computes per-trace bounds and strict shared overlap window for three-edge runs.
+	* Computes per-trace bounds and strict shared overlap window for multi-edge runs.
 	* Filters each trace to inclusive overlap bounds [start, end].
-	* Produces deterministic merged request ordering with edge tie-break rule edge1 -> edge2 -> edge3.
+	* Produces deterministic merged request ordering with edge tie-break rule edge1 -> edge2 -> edge3 -> ...
 * **Merge Modes:**
 	* Default mode (`assume_sorted=False`) sorts in-window records to support traces that are not strictly timestamp-sorted.
 	* Streaming mode (`assume_sorted=True`) uses iterator-based heap merge for pre-sorted traces.

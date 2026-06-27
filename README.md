@@ -41,20 +41,22 @@ python -m scripts.edge_sweep_experiment \
 	--experiment-name edge_sweep
 ```
 
-## Run: Multi-Edge (3 Edges -> 1 Parent)
+## Run: Multi-Edge (N Edges -> 1 Parent)
 
 ```bash
 python -m scripts.run_multi_edge_simulation \
 	--trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 data/three_edges/request_seq_edge_3 \
 	--edge-gb 24 \
 	--parent-gb 120 \
-	--experiment-name three_edge_run
+	--experiment-name multi_edge_run
 ```
 
 ### Notes for Multi-Edge Runs
 
-- The run computes a strict shared overlap window across all three traces and keeps timestamps in the inclusive range [start, end].
-- Equal timestamps are processed deterministically in edge order: edge1, then edge2, then edge3.
+- The run accepts one or more edge traces via `--trace-files`.
+- The run computes a strict shared overlap window across all provided traces and keeps timestamps in the inclusive range [start, end].
+- Equal timestamps are processed deterministically by edge index order (edge1, edge2, edge3, ...).
 - Default merge mode supports unsorted input traces by sorting in-window records in memory.
 - If traces are already timestamp-sorted, add `--assume-sorted` for streaming merge behavior.
 - Progress logging is enabled by default every 1,000,000 requests; tune with `--log-every` or disable periodic logs using `--log-every 0`.
+- Run outputs include edge count in names, for example `3_edges_edge_24GB_parent_120GB`.

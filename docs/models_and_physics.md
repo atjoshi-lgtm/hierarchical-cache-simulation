@@ -12,12 +12,12 @@ This document defines the core mechanics and domain rules of the 2-tier CDN cach
 
 * One edge cache and one parent cache are simulated.
 
-### Three-Edge Mode
+### Multi-Edge Mode
 
-* Three independent edge caches share one parent cache.
-* Input traces are first aligned to a strict common time window across all three edges.
+* One or more independent edge caches share one parent cache.
+* Input traces are first aligned to a strict common time window across all provided edges.
 * Inclusive overlap rule: keep requests with timestamps in [start, end].
-* Deterministic ordering rule: when timestamps are equal across edges, process in edge order edge1 -> edge2 -> edge3.
+* Deterministic ordering rule: when timestamps are equal across edges, process in edge order edge1 -> edge2 -> edge3 -> ...
 
 ## Byte-Aware LRU Mechanics
 
