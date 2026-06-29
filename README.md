@@ -31,6 +31,15 @@ python -m scripts.analyze_trace \
 	--experiment-name trace_analysis
 ```
 
+### Notes for Trace Analysis
+
+- Saves summary JSON, rank-frequency popularity CSV, and log-log popularity plot.
+- Also saves size-weighted popularity artifacts for byte-budget analysis:
+  - `trace_analysis_<trace_name>_weighted_by_size.csv`
+  - `trace_analysis_<trace_name>_weighted_by_size.png`
+- The size-weighted curve orders objects by request frequency, then reports cumulative request coverage as cumulative unique object bytes increase.
+- In the weighted CSV, `cumulative_request_fraction` answers: "what fraction of total requests are made by the top-k bytes" where k is `cumulative_byte_fraction * working_set_bytes`.
+
 ## Run: Fixed-Parent Edge Sweep
 
 ```bash
@@ -94,6 +103,10 @@ python -m scripts.analyze_two_trace_weighted_overlap \
 - Time buckets are equal-width by timestamp; final bucket may be shorter.
 - The requested bucket count is a target; actual bucket count can be lower while preserving equal-width semantics.
 - Reports request-weighted and byte-weighted overlap with directional fractions (A->B, B->A) and weighted Jaccard per bucket.
+- For each pair of edges (A, B), let (U_A) and (U_B) be sets of unique files requested.
+	- Common-from-(A): $\frac{|U_A \cap U_B|}{|U_A|}$
+	- Common-from-(B): $\frac{|U_A \cap U_B|}{|U_B|}$
+	- Jaccard: $\frac{|U_A \cap U_B|}{|U_A \cup U_B|}$
 - `A->B` means "how much of trace A overlaps with trace B" (shared weighted mass divided by A's total weighted mass for that bucket).
 - `B->A` means "how much of trace B overlaps with trace A" (shared weighted mass divided by B's total weighted mass for that bucket).
 - Because the denominators differ, `A->B` and `B->A` are often different even for the same bucket.

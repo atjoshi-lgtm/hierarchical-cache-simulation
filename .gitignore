@@ -232,3 +232,4 @@ figures/*
 # **/*.txt
 data/
 experiments/**
+hierarchical-cache-simulation-experiments/**

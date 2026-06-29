@@ -95,10 +95,38 @@ def main() -> None:
     frequencies = sorted(request_counts.values(), reverse=True)
     ranks = np.arange(1, len(frequencies) + 1)
 
+    # Sort objects by request frequency and accumulate object bytes to build
+    # request coverage as a function of byte budget (top-k bytes).
+    popularity_rows = sorted(
+        ((cachekey, freq, unique_objects[cachekey]) for cachekey, freq in request_counts.items()),
+        key=lambda row: row[1],
+        reverse=True,
+    )
+    cumulative_bytes = 0
+    cumulative_requests = 0
+    weighted_rows: list[tuple[int, int, int, float, int, float]] = []
+    for rank, (_, frequency, object_size) in enumerate(popularity_rows, start=1):
+        cumulative_bytes += object_size
+        cumulative_requests += frequency
+        byte_fraction = cumulative_bytes / working_set_bytes if working_set_bytes else 0.0
+        request_fraction = cumulative_requests / total_requests if total_requests else 0.0
+        weighted_rows.append(
+            (
+                rank,
+                int(cumulative_bytes),
+                int(cumulative_requests),
+                float(byte_fraction),
+                int(frequency),
+                float(request_fraction),
+            )
+        )
+
     base_name = f"trace_analysis_{trace_name}"
     plot_path = run_dir / f"{base_name}.png"
     summary_json_path = run_dir / f"{base_name}_summary.json"
     popularity_csv_path = run_dir / f"{base_name}_popularity.csv"
+    weighted_popularity_csv_path = run_dir / f"{base_name}_weighted_by_size.csv"
+    weighted_plot_path = run_dir / f"{base_name}_weighted_by_size.png"
 
     with open(summary_json_path, "w", encoding="utf-8") as summary_file:
         json.dump(summary, summary_file, indent=2)
@@ -108,6 +136,21 @@ def main() -> None:
         writer.writerow(["rank", "frequency"])
         for rank, frequency in zip(ranks, frequencies):
             writer.writerow([int(rank), int(frequency)])
+
+    with open(weighted_popularity_csv_path, "w", encoding="utf-8", newline="") as weighted_file:
+        writer = csv.writer(weighted_file)
+        writer.writerow(
+            [
+                "rank",
+                "cumulative_bytes",
+                "cumulative_requests",
+                "cumulative_byte_fraction",
+                "frequency",
+                "cumulative_request_fraction",
+            ]
+        )
+        for row in weighted_rows:
+            writer.writerow(row)
 
     plt.figure(figsize=(10, 6))
     plt.loglog(ranks, frequencies, marker="o", markersize=3, linestyle="none", alpha=0.6)
@@ -119,9 +162,27 @@ def main() -> None:
     plt.savefig(plot_path, dpi=150, bbox_inches="tight")
     plt.close()
 
+    if weighted_rows:
+        byte_fractions = [row[3] for row in weighted_rows]
+        request_fractions = [row[5] for row in weighted_rows]
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(byte_fractions, request_fractions, linewidth=2.2)
+        plt.xlabel("Cumulative Fraction of Working-Set Bytes", fontsize=12)
+        plt.ylabel("Cumulative Fraction of Requests", fontsize=12)
+        plt.title("Request Capture by Top-k Bytes (Popularity Ordered)", fontsize=14, fontweight="bold")
+        plt.grid(True, alpha=0.3)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+        plt.tight_layout()
+        plt.savefig(weighted_plot_path, dpi=150, bbox_inches="tight")
+        plt.close()
+
     logger.info("Saved summary JSON: %s", summary_json_path)
     logger.info("Saved raw popularity CSV: %s", popularity_csv_path)
+    logger.info("Saved size-weighted popularity CSV: %s", weighted_popularity_csv_path)
     logger.info("Saved plot: %s", plot_path)
+    logger.info("Saved size-weighted plot: %s", weighted_plot_path)
 
 
 if __name__ == "__main__":

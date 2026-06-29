@@ -15,6 +15,8 @@ This repository implements a trace-driven, 2-tier CDN cache simulator (Client ->
   - summary metrics JSON
   - rank-frequency popularity CSV
   - log-log popularity plot
+  - size-weighted popularity CSV (request coverage vs cumulative byte budget)
+  - request-capture-by-bytes plot (cumulative requests vs cumulative bytes)
 - Run a fixed-parent, edge-size sweep experiment and produce:
   - raw CSV + JSON of per-run metrics
   - 2x2 comparison plot for edge hit rate, parent conditional hit rate, global hit rate, and duplication byte rate.
@@ -120,6 +122,12 @@ Two-trace weighted overlap outputs expose per-bucket overlap metrics:
 - byte_frac_a_to_b, byte_frac_b_to_a, byte_jaccard
 - request and byte totals plus min/max overlap weights for denominator transparency
 
+Trace-analysis weighted-popularity outputs expose:
+- cumulative_bytes, cumulative_byte_fraction
+- cumulative_requests, cumulative_request_fraction
+- Objects are ordered by descending request frequency; cumulative fractions are taken over that order.
+- Interpretation: `cumulative_request_fraction` is the fraction of all requests captured by the top-k bytes, where k is `cumulative_byte_fraction * working_set_bytes`.
+
 Definitions used by the sweep script:
 - edge_hit_rate = edge_hits / total_requests
 - parent_hit_rate = parent_hits / edge_misses
@@ -175,7 +183,7 @@ Typical artifacts per run:
 - scripts/run_multi_edge_simulation.py: reproducible multi-edge simulation entry point with progress logging.
 - scripts/two_edge_parent_hitrate_experiment.py: two-edge sweep entry point for aggregate and per-stream parent hit rates.
 - scripts/analyze_two_trace_weighted_overlap.py: two-trace bucketed weighted-overlap analyzer with directional and Jaccard metrics.
-- scripts/analyze_trace.py: trace summary + popularity distribution artifacts.
+- scripts/analyze_trace.py: trace summary + popularity distribution artifacts, including size-weighted request-capture-by-bytes outputs.
 - scripts/edge_sweep_experiment.py: fixed-parent edge sweep experiment and 4-metric plot.
 
 ## Known Gaps / Cleanup Items
