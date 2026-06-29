@@ -60,3 +60,4 @@ python -m scripts.run_multi_edge_simulation \
 - If traces are already timestamp-sorted, add `--assume-sorted` for streaming merge behavior.
 - Progress logging is enabled by default every 1,000,000 requests; tune with `--log-every` or disable periodic logs using `--log-every 0`.
 - Run outputs include edge count in names, for example `3_edges_edge_24GB_parent_120GB`.
+- Parent miss-stream metrics are reported as `parent_hit_rate` (aggregate) and `edge_i_parent_hit_rate` (per edge), along with matching hit/miss counters.

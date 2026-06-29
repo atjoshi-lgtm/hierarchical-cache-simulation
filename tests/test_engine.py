@@ -36,9 +36,19 @@ def test_multi_edge_engine_shared_parent_hits(tmp_path: Path) -> None:
     assert metrics["total_requests"] == 3
     assert metrics["parent_hits"] == 1
     assert metrics["parent_misses"] == 2
+    assert metrics["parent_hit_rate"] == 1 / 3
     assert metrics["edge_1_misses"] == 1
     assert metrics["edge_2_misses"] == 1
     assert metrics["edge_3_misses"] == 1
+    assert metrics["edge_1_parent_hits"] == 0
+    assert metrics["edge_1_parent_misses"] == 1
+    assert metrics["edge_1_parent_hit_rate"] == 0.0
+    assert metrics["edge_2_parent_hits"] == 1
+    assert metrics["edge_2_parent_misses"] == 0
+    assert metrics["edge_2_parent_hit_rate"] == 1.0
+    assert metrics["edge_3_parent_hits"] == 0
+    assert metrics["edge_3_parent_misses"] == 1
+    assert metrics["edge_3_parent_hit_rate"] == 0.0
     assert metrics["duplication_overlap_union_bytes"] == 30
     assert metrics["duplication_byte_rate"] == 1.0
 
@@ -60,3 +70,4 @@ def test_multi_edge_tiebreak_is_deterministic(tmp_path: Path) -> None:
     assert metrics["total_requests"] == 3
     assert metrics["parent_hits"] == 0
     assert metrics["parent_misses"] == 3
+    assert metrics["parent_hit_rate"] == 0.0

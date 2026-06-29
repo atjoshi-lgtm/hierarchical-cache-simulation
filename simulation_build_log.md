@@ -92,3 +92,4 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
   * Added optional streaming merge path for sorted traces via `--assume-sorted`.
   * Added structured progress logging for long runs, including periodic throughput and hit-rate checkpoints.
   * Extended metrics with per-edge counters plus union-based duplication overlap statistics.
+  * Renamed parent miss-stream rate keys to `parent_hit_rate` and `edge_i_parent_hit_rate`, while preserving per-edge parent hit/miss counters.

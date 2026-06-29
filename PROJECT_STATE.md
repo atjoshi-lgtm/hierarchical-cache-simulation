@@ -76,18 +76,21 @@ Core simulation counters (from engine output):
 - total_requests
 - edge_hits, edge_misses, edge_evictions
 - parent_hits, parent_misses, parent_evictions
+- parent_hit_rate
 - duplication_byte_rate
 
 Additional multi-edge counters:
 - edge_1_hits/edge_1_misses/edge_1_evictions
 - edge_2_hits/edge_2_misses/edge_2_evictions
 - edge_3_hits/edge_3_misses/edge_3_evictions
+- edge_i_parent_hits and edge_i_parent_misses
+- edge_i_parent_hit_rate
 - duplication_overlap_union_bytes
 - edge_i_parent_overlap_bytes and edge_i_duplication_byte_rate
 
 Definitions used by the sweep script:
 - edge_hit_rate = edge_hits / total_requests
-- parent_conditional_hit_rate = parent_hits / edge_misses
+- parent_hit_rate = parent_hits / edge_misses
 - global_hit_rate = (edge_hits + parent_hits) / total_requests
 - duplication_byte_rate = overlapping_parent_bytes_with_edge / parent_current_bytes
 

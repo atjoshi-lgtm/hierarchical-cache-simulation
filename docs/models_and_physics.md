@@ -31,6 +31,12 @@ This document defines the core mechanics and domain rules of the 2-tier CDN cach
 * **Duplication Byte Rate:** `union_overlap_bytes / parent_current_bytes` (0.0 if parent is empty).
 * **Per-Edge Overlap Metrics:** Also report each edge's overlap with parent and per-edge duplication rate for attribution.
 
+## Parent Miss-Stream Metrics in Multi-Edge Mode
+
+* **Aggregate Parent Hit Rate (`parent_hit_rate`):** `parent_hits / edge_misses`.
+* **Per-Edge Parent Hit Rate (`edge_i_parent_hit_rate`):** `edge_i_parent_hits / (edge_i_parent_hits + edge_i_parent_misses)`.
+* **Per-Edge Parent Counters:** `edge_i_parent_hits` and `edge_i_parent_misses` track parent behavior for each edge's miss stream.
+
 ## Object Mutability Rules
 
 * **Dynamic Sizes:** The `file_size` associated with a specific `cachekey` can change mid-simulation due to Origin updates.
