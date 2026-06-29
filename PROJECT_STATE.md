@@ -9,6 +9,7 @@ This repository implements a trace-driven, 2-tier CDN cache simulator (Client ->
 - Simulate one or more edge caches feeding one shared parent cache with strict common-window alignment.
 - Merge multi-edge requests deterministically by edge index order for equal timestamps.
 - Emit structured progress logs during long multi-edge runs.
+- Run a two-edge experiment that sweeps edge_1 disk size while holding edge_2 and parent fixed, and report aggregate plus per-stream parent hit rates.
 - Analyze one trace and produce:
   - summary metrics JSON
   - rank-frequency popularity CSV
@@ -63,6 +64,17 @@ python -m scripts.run_multi_edge_simulation \
   --experiment-name multi_edge_run
 ```
 
+Two-edge parent hit-rate sweep run:
+
+```bash
+python -m scripts.two_edge_parent_hitrate_experiment \
+  --trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 \
+  --edge-1-sizes-gb 6,12,24,48,96,120 \
+  --edge-2-gb 24 \
+  --parent-gb 120 \
+  --experiment-name two_edge_parent_hitrate
+```
+
 # Data Format
 The input is a massive plain text log file containing pre-processed request traces. 
 * Lines starting with `#` are metadata/comments and must be ignored.
@@ -88,6 +100,11 @@ Additional multi-edge counters:
 - duplication_overlap_union_bytes
 - edge_i_parent_overlap_bytes and edge_i_duplication_byte_rate
 
+Two-edge sweep outputs additionally surface these parent hit-rate series per row:
+- parent_hit_rate
+- edge_1_parent_hit_rate
+- edge_2_parent_hit_rate
+
 Definitions used by the sweep script:
 - edge_hit_rate = edge_hits / total_requests
 - parent_hit_rate = parent_hits / edge_misses
@@ -101,6 +118,7 @@ Definitions used by the sweep script:
 - Multi-edge run computes strict shared overlap window across all provided traces and filters each trace to inclusive bounds [start, end].
 - Multi-edge tie-break policy at equal timestamp is deterministic edge order (1 -> 2 -> 3 -> ...).
 - Multi-edge CLI supports progress control using `--log-every` and merge strategy with `--assume-sorted`.
+- Two-edge sweep varies edge_1 size while holding edge_2 and parent fixed.
 - Sweep script currently varies Edge size over a provided list while holding Parent fixed.
 - Duplication metric currently reported as final-state overlap ratio at run end.
 
@@ -119,6 +137,9 @@ Edge sweep directory pattern:
 Multi-edge directory pattern:
 - experiments/<experiment_name>/<num_edges>_edges_edge_<edge>GB_parent_<parent>GB/
 
+Two-edge parent hit-rate sweep directory pattern:
+- experiments/<experiment_name>/trace_<edge_1_trace>_<edge_2_trace>_parent_<parent>GB_edge1_<min>-<max>GB_edge2_<edge_2>GB/
+
 Typical artifacts per run:
 - run.log
 - config_used.json
@@ -133,6 +154,7 @@ Typical artifacts per run:
 - src/simulator/engine/multi_edge_orchestrator.py: multi-edge shared-parent orchestration and multi-edge metrics.
 - scripts/run_simulation_demo.py: reproducible single-configuration simulation entry point.
 - scripts/run_multi_edge_simulation.py: reproducible multi-edge simulation entry point with progress logging.
+- scripts/two_edge_parent_hitrate_experiment.py: two-edge sweep entry point for aggregate and per-stream parent hit rates.
 - scripts/analyze_trace.py: trace summary + popularity distribution artifacts.
 - scripts/edge_sweep_experiment.py: fixed-parent edge sweep experiment and 4-metric plot.
 

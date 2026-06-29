@@ -93,3 +93,11 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
   * Added structured progress logging for long runs, including periodic throughput and hit-rate checkpoints.
   * Extended metrics with per-edge counters plus union-based duplication overlap statistics.
   * Renamed parent miss-stream rate keys to `parent_hit_rate` and `edge_i_parent_hit_rate`, while preserving per-edge parent hit/miss counters.
+
+## Phase 9: Two-Edge Parent Hit-Rate Sweep
+* **Status:** Complete.
+* **Components:** `scripts/two_edge_parent_hitrate_experiment.py`, `tests/test_two_edge_parent_hitrate_experiment.py`
+* **Decisions:**
+  * Added a dedicated experiment script that fixes edge_2 and parent capacity while sweeping only edge_1 capacity.
+  * Reused the existing multi-edge aligner and engine so overlap semantics and parent miss-stream metrics remain consistent.
+  * Saved raw CSV, raw JSON, and a three-curve plot for aggregate parent hit rate plus the parent hit rates on edge_1 and edge_2 miss streams.

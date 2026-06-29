@@ -61,3 +61,20 @@ python -m scripts.run_multi_edge_simulation \
 - Progress logging is enabled by default every 1,000,000 requests; tune with `--log-every` or disable periodic logs using `--log-every 0`.
 - Run outputs include edge count in names, for example `3_edges_edge_24GB_parent_120GB`.
 - Parent miss-stream metrics are reported as `parent_hit_rate` (aggregate) and `edge_i_parent_hit_rate` (per edge), along with matching hit/miss counters.
+
+## Run: Two-Edge Parent Hit-Rate Sweep
+
+```bash
+python -m scripts.two_edge_parent_hitrate_experiment \
+	--trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 \
+	--edge-1-sizes-gb 6,12,24,48,96,120 \
+	--edge-2-gb 24 \
+	--parent-gb 120 \
+	--experiment-name two_edge_parent_hitrate
+```
+
+### Notes for the Two-Edge Sweep
+
+- This experiment fixes edge_2 and the parent cache, then sweeps only edge_1 size.
+- It reports three parent hit-rate curves: aggregate `parent_hit_rate`, `edge_1_parent_hit_rate`, and `edge_2_parent_hit_rate`.
+- Raw CSV, raw JSON, and a plot are written under the experiment directory.
