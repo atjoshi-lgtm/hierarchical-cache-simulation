@@ -10,6 +10,7 @@ This repository implements a trace-driven, 2-tier CDN cache simulator (Client ->
 - Merge multi-edge requests deterministically by edge index order for equal timestamps.
 - Emit structured progress logs during long multi-edge runs.
 - Run a two-edge experiment that sweeps edge_1 disk size while holding edge_2 and parent fixed, and report aggregate plus per-stream parent hit rates.
+- Analyze weighted overlap between two traces across time buckets with directional fractions and weighted Jaccard for both request and byte views.
 - Analyze one trace and produce:
   - summary metrics JSON
   - rank-frequency popularity CSV
@@ -75,6 +76,15 @@ python -m scripts.two_edge_parent_hitrate_experiment \
   --experiment-name two_edge_parent_hitrate
 ```
 
+Two-trace weighted overlap analysis run:
+
+```bash
+python -m scripts.analyze_two_trace_weighted_overlap \
+  --trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 \
+  --num-buckets 24 \
+  --experiment-name two_trace_weighted_overlap
+```
+
 # Data Format
 The input is a massive plain text log file containing pre-processed request traces. 
 * Lines starting with `#` are metadata/comments and must be ignored.
@@ -105,6 +115,11 @@ Two-edge sweep outputs additionally surface these parent hit-rate series per row
 - edge_1_parent_hit_rate
 - edge_2_parent_hit_rate
 
+Two-trace weighted overlap outputs expose per-bucket overlap metrics:
+- req_frac_a_to_b, req_frac_b_to_a, req_jaccard
+- byte_frac_a_to_b, byte_frac_b_to_a, byte_jaccard
+- request and byte totals plus min/max overlap weights for denominator transparency
+
 Definitions used by the sweep script:
 - edge_hit_rate = edge_hits / total_requests
 - parent_hit_rate = parent_hits / edge_misses
@@ -119,6 +134,7 @@ Definitions used by the sweep script:
 - Multi-edge tie-break policy at equal timestamp is deterministic edge order (1 -> 2 -> 3 -> ...).
 - Multi-edge CLI supports progress control using `--log-every` and merge strategy with `--assume-sorted`.
 - Two-edge sweep varies edge_1 size while holding edge_2 and parent fixed.
+- Two-trace weighted overlap analysis uses pairwise common window only and equal-width timestamp buckets with potentially shorter final bucket.
 - Sweep script currently varies Edge size over a provided list while holding Parent fixed.
 - Duplication metric currently reported as final-state overlap ratio at run end.
 
@@ -140,6 +156,9 @@ Multi-edge directory pattern:
 Two-edge parent hit-rate sweep directory pattern:
 - experiments/<experiment_name>/trace_<edge_1_trace>_<edge_2_trace>_parent_<parent>GB_edge1_<min>-<max>GB_edge2_<edge_2>GB/
 
+Two-trace weighted overlap directory pattern:
+- experiments/<experiment_name>/trace_<trace_a>_<trace_b>_buckets_<actual_bucket_count>/
+
 Typical artifacts per run:
 - run.log
 - config_used.json
@@ -155,6 +174,7 @@ Typical artifacts per run:
 - scripts/run_simulation_demo.py: reproducible single-configuration simulation entry point.
 - scripts/run_multi_edge_simulation.py: reproducible multi-edge simulation entry point with progress logging.
 - scripts/two_edge_parent_hitrate_experiment.py: two-edge sweep entry point for aggregate and per-stream parent hit rates.
+- scripts/analyze_two_trace_weighted_overlap.py: two-trace bucketed weighted-overlap analyzer with directional and Jaccard metrics.
 - scripts/analyze_trace.py: trace summary + popularity distribution artifacts.
 - scripts/edge_sweep_experiment.py: fixed-parent edge sweep experiment and 4-metric plot.
 

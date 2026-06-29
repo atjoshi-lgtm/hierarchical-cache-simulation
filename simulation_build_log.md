@@ -101,3 +101,12 @@ Build a highly modular, strictly separated Python repository for a trace-driven 
   * Added a dedicated experiment script that fixes edge_2 and parent capacity while sweeping only edge_1 capacity.
   * Reused the existing multi-edge aligner and engine so overlap semantics and parent miss-stream metrics remain consistent.
   * Saved raw CSV, raw JSON, and a three-curve plot for aggregate parent hit rate plus the parent hit rates on edge_1 and edge_2 miss streams.
+
+## Phase 10: Two-Trace Weighted Overlap Bucketing
+* **Status:** Complete.
+* **Components:** `scripts/analyze_two_trace_weighted_overlap.py`, `tests/test_two_trace_weighted_overlap.py`
+* **Decisions:**
+  * Added a two-trace analysis entry point that uses pairwise common window only.
+  * Implemented equal-width timestamp buckets with a potentially shorter final bucket.
+  * Implemented per-bucket request-weighted and byte-weighted overlap metrics with directional fractions and weighted Jaccard.
+  * Saved raw CSV, raw JSON, summary JSON, and three plots (request overlap, byte overlap, volume context).

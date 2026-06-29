@@ -78,3 +78,23 @@ python -m scripts.two_edge_parent_hitrate_experiment \
 - This experiment fixes edge_2 and the parent cache, then sweeps only edge_1 size.
 - It reports three parent hit-rate curves: aggregate `parent_hit_rate`, `edge_1_parent_hit_rate`, and `edge_2_parent_hit_rate`.
 - Raw CSV, raw JSON, and a plot are written under the experiment directory.
+
+## Run: Two-Trace Weighted Overlap Analysis
+
+```bash
+python -m scripts.analyze_two_trace_weighted_overlap \
+	--trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 \
+	--num-buckets 24 \
+	--experiment-name two_trace_weighted_overlap
+```
+
+### Notes for Weighted Overlap Analysis
+
+- Uses pairwise common window for the two input traces only.
+- Time buckets are equal-width by timestamp; final bucket may be shorter.
+- The requested bucket count is a target; actual bucket count can be lower while preserving equal-width semantics.
+- Reports request-weighted and byte-weighted overlap with directional fractions (A->B, B->A) and weighted Jaccard per bucket.
+- `A->B` means "how much of trace A overlaps with trace B" (shared weighted mass divided by A's total weighted mass for that bucket).
+- `B->A` means "how much of trace B overlaps with trace A" (shared weighted mass divided by B's total weighted mass for that bucket).
+- Because the denominators differ, `A->B` and `B->A` are often different even for the same bucket.
+- Saves raw CSV, raw JSON, summary JSON, and three plots (request overlap, byte overlap, and per-bucket volumes).
