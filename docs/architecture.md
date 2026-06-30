@@ -25,3 +25,8 @@ This document defines the strict, modular layer boundaries for the hierarchical-
 * **Operational Logging (`scripts/run_multi_edge_simulation.py`):**
 	* Logs run phases (window scan, merge setup, simulation progress, completion).
 	* Supports periodic progress logging with configurable request interval.
+* **Two-Edge Sweep Scripts:**
+	* `scripts/two_edge_parent_hitrate_experiment.py` sweeps edge_1 size while edge_2 and parent capacity remain fixed.
+	* `scripts/two_edge_parent_sweep_experiment.py` sweeps parent size while edge_1 and edge_2 capacity remain fixed.
+	* Both scripts save `run.log`, `config_used.json`, raw CSV, raw JSON, and one 2x2 composite PNG under `experiments/<experiment_name>/...`.
+	* The composite plots show parent hit rates, per-edge edge hit rates, aggregate/per-edge global hit rates, and aggregate/per-edge duplication byte rates.

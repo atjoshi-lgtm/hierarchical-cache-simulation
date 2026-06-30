@@ -30,12 +30,20 @@ This document defines the core mechanics and domain rules of the 2-tier CDN cach
 * **Union Overlap Bytes:** Number of parent bytes whose objects are present in at least one edge cache.
 * **Duplication Byte Rate:** `union_overlap_bytes / parent_current_bytes` (0.0 if parent is empty).
 * **Per-Edge Overlap Metrics:** Also report each edge's overlap with parent and per-edge duplication rate for attribution.
+* **Per-Edge Duplication Byte Rate (`edge_i_duplication_byte_rate`):** `edge_i_parent_overlap_bytes / parent_current_bytes` (0.0 if parent is empty).
 
 ## Parent Miss-Stream Metrics in Multi-Edge Mode
 
 * **Aggregate Parent Hit Rate (`parent_hit_rate`):** `parent_hits / edge_misses`.
 * **Per-Edge Parent Hit Rate (`edge_i_parent_hit_rate`):** `edge_i_parent_hits / (edge_i_parent_hits + edge_i_parent_misses)`.
 * **Per-Edge Parent Counters:** `edge_i_parent_hits` and `edge_i_parent_misses` track parent behavior for each edge's miss stream.
+
+## Per-Edge Request and Global Hit Metrics in Multi-Edge Mode
+
+* **Per-Edge Request Count (`edge_i_total_requests`):** Number of merged-window requests routed to edge `i`.
+* **Per-Edge Edge Hit Rate (`edge_i_hit_rate` in sweep outputs):** `edge_i_hits / edge_i_total_requests`.
+* **Aggregate Global Hit Rate (`global_hit_rate` in sweep outputs):** `(edge_hits + parent_hits) / total_requests`.
+* **Per-Edge Global Hit Rate (`edge_i_global_hit_rate` in sweep outputs):** `(edge_i_hits + edge_i_parent_hits) / edge_i_total_requests`.
 
 ## Object Mutability Rules
 

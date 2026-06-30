@@ -37,6 +37,9 @@ def test_multi_edge_engine_shared_parent_hits(tmp_path: Path) -> None:
     assert metrics["parent_hits"] == 1
     assert metrics["parent_misses"] == 2
     assert metrics["parent_hit_rate"] == 1 / 3
+    assert metrics["edge_1_total_requests"] == 1
+    assert metrics["edge_2_total_requests"] == 1
+    assert metrics["edge_3_total_requests"] == 1
     assert metrics["edge_1_misses"] == 1
     assert metrics["edge_2_misses"] == 1
     assert metrics["edge_3_misses"] == 1

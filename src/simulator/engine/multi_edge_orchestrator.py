@@ -19,6 +19,9 @@ class MultiEdgeSimulationEngine:
 
     def run(self) -> dict[str, float]:
         total_requests = 0
+        requests_by_edge: dict[int, int] = {
+            edge_id: 0 for edge_id in self.edge_caches
+        }
         parent_hits_by_edge: dict[int, int] = {
             edge_id: 0 for edge_id in self.edge_caches
         }
@@ -32,6 +35,7 @@ class MultiEdgeSimulationEngine:
 
             edge_cache = self.edge_caches[edge_id]
             total_requests += 1
+            requests_by_edge[edge_id] += 1
 
             if edge_cache.get(request.cachekey):
                 self._emit_progress(total_requests)
@@ -72,9 +76,11 @@ class MultiEdgeSimulationEngine:
 
         for edge_id, edge_cache in sorted(self.edge_caches.items()):
             overlap_bytes = self.parent_cache.byte_overlap_with(edge_cache)
+            edge_total_requests = requests_by_edge[edge_id]
             edge_parent_hits = parent_hits_by_edge[edge_id]
             edge_parent_misses = parent_misses_by_edge[edge_id]
             edge_parent_requests = edge_parent_hits + edge_parent_misses
+            metrics[f"edge_{edge_id}_total_requests"] = edge_total_requests
             metrics[f"edge_{edge_id}_hits"] = edge_cache.hits
             metrics[f"edge_{edge_id}_misses"] = edge_cache.misses
             metrics[f"edge_{edge_id}_evictions"] = edge_cache.evictions

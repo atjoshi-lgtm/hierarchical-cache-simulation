@@ -1,11 +1,11 @@
-from scripts.two_edge_parent_hitrate_experiment import build_row, parse_edge_sizes
+from scripts.two_edge_parent_sweep_experiment import build_row, parse_parent_sizes
 
 
-def test_parse_edge_sizes() -> None:
-    assert parse_edge_sizes("6, 12,24") == [6, 12, 24]
+def test_parse_parent_sizes() -> None:
+    assert parse_parent_sizes("12, 24,48") == [12, 24, 48]
 
 
-def test_build_row_includes_parent_stream_rates() -> None:
+def test_build_row_includes_parent_sweep_rates() -> None:
     metrics = {
         "total_requests": 10,
         "edge_hits": 4,
@@ -30,11 +30,11 @@ def test_build_row_includes_parent_stream_rates() -> None:
         "edge_2_duplication_byte_rate": 0.2,
     }
 
-    row = build_row(edge_1_gb=12, edge_2_gb=24, parent_gb=120, metrics=metrics)
+    row = build_row(parent_gb=48, edge_1_gb=12, edge_2_gb=24, metrics=metrics)
 
+    assert row["parent_gb"] == 48
     assert row["edge_1_gb"] == 12
     assert row["edge_2_gb"] == 24
-    assert row["parent_gb"] == 120
     assert row["edge_1_total_requests"] == 4
     assert row["edge_2_total_requests"] == 6
     assert row["edge_1_hit_rate"] == 1 / 4

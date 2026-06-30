@@ -13,6 +13,14 @@ source venv/bin/activate
 python -m pip install -e .
 ```
 
+## Smoke Tests
+
+Always use the tiny files `data/trace_A_smoke` and `data/trace_B_smoke` for smoke tests, especially for multi-edge, two-edge, and parent-sweep CLI checks. Use the larger `data/three_edges/trace_A` and `data/three_edges/trace_B` traces only for real experiment runs.
+
+## Documentation Notes
+
+Do not update files under `docs/analysis_latex/` during general documentation edits. Only update those LaTeX analysis files when explicitly asked to update the LaTeX or analysis-paper content.
+
 ## Run: Single Simulation
 
 ```bash
@@ -85,8 +93,40 @@ python -m scripts.two_edge_parent_hitrate_experiment \
 ### Notes for the Two-Edge Sweep
 
 - This experiment fixes edge_2 and the parent cache, then sweeps only edge_1 size.
-- It reports three parent hit-rate curves: aggregate `parent_hit_rate`, `edge_1_parent_hit_rate`, and `edge_2_parent_hit_rate`.
-- Raw CSV, raw JSON, and a plot are written under the experiment directory.
+- It writes one composite 2x2 plot with four metric families:
+	- Parent hit rates: `parent_hit_rate`, `edge_1_parent_hit_rate`, `edge_2_parent_hit_rate`
+	- Per-edge edge hit rates: `edge_1_hit_rate`, `edge_2_hit_rate`
+	- Global hit rates: aggregate `global_hit_rate`, plus `edge_1_global_hit_rate`, `edge_2_global_hit_rate`
+	- Duplication byte rates: aggregate `duplication_byte_rate`, plus `edge_1_duplication_byte_rate`, `edge_2_duplication_byte_rate`
+- Raw CSV, raw JSON, and the composite PNG are written under the experiment directory.
+
+## Run: Two-Edge Parent Size Sweep
+
+```bash
+python -m scripts.two_edge_parent_sweep_experiment \
+	--trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 \
+	--edge-1-gb 24 \
+	--edge-2-gb 12 \
+	--parent-sizes-gb 12,24,48,96,120 \
+	--experiment-name two_edge_parent_sweep
+```
+
+### Notes for the Two-Edge Parent Size Sweep
+
+- This experiment fixes edge_1 and edge_2, then sweeps only parent cache size.
+- It writes the same four-family composite 2x2 plot as the edge_1 sweep, with parent disk size on the x-axis.
+- Raw CSV, raw JSON, and the composite PNG are written under the experiment directory.
+
+### Two-Edge Metric Definitions
+
+- `parent_hit_rate = parent_hits / edge_misses`
+- `edge_i_parent_hit_rate = edge_i_parent_hits / (edge_i_parent_hits + edge_i_parent_misses)`
+- `edge_i_hit_rate = edge_i_hits / edge_i_total_requests`
+- `global_hit_rate = (edge_hits + parent_hits) / total_requests`
+- `edge_i_global_hit_rate = (edge_i_hits + edge_i_parent_hits) / edge_i_total_requests`
+- `duplication_overlap_union_bytes` = bytes currently in parent that also exist in at least one edge cache (union over edges)
+- `duplication_byte_rate = duplication_overlap_union_bytes / parent_current_bytes`
+- `edge_i_duplication_byte_rate = edge_i_parent_overlap_bytes / parent_current_bytes`
 
 ## Run: Two-Trace Weighted Overlap Analysis
 

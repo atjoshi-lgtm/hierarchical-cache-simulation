@@ -233,3 +233,4 @@ figures/*
 data/
 experiments/**
 hierarchical-cache-simulation-experiments/**
+docs/analysis_latex

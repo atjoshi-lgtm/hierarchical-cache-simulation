@@ -40,3 +40,5 @@ You are an Expert Systems Architect and Python Developer working on a Trace-Driv
 2. **Configuration Tracking:** Do not hardcode experimental parameters (cache sizes, file paths) in production scripts. Use `argparse` or config files. ALWAYS dump a `config_used.json` file into the experiment output directory so the run is permanently reproducible.
 3. **Deterministic Execution:** The simulator must remain mathematically reproducible. If any stochastic or random logic is introduced, a fixed random seed (e.g., `42`) must be set globally at the start of the script.
 4. **Git Hygiene:** Massive trace files and experiment outputs must never be committed. Ensure `data/`, `experiments/`, and `venv/` are strictly ignored in `.gitignore`.
+5. **Smoke Tests:** Always use the tiny smoke traces `data/trace_A_smoke` and `data/trace_B_smoke` for smoke tests. Do not use large traces such as `data/three_edges/trace_A` and `data/three_edges/trace_B` for smoke validation.
+6. **LaTeX Analysis Files:** Do not edit files under `docs/analysis_latex/` during general documentation updates. Only update those LaTeX files when the user explicitly asks for LaTeX or analysis-paper edits.

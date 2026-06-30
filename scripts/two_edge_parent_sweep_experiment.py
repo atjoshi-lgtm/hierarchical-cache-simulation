@@ -1,4 +1,4 @@
-"""Sweep edge_1 disk size in a two-edge shared-parent simulation."""
+"""Sweep parent disk size in a two-edge shared-parent simulation."""
 
 import argparse
 import csv
@@ -19,7 +19,7 @@ GB = 1_000_000_000
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sweep edge_1 size for a two-edge shared-parent experiment."
+        description="Sweep parent size for a two-edge shared-parent experiment."
     )
     parser.add_argument(
         "--trace-files",
@@ -30,21 +30,21 @@ def parse_args() -> argparse.Namespace:
         ],
         help="Exactly two edge trace files, ordered as edge_1 then edge_2.",
     )
-    parser.add_argument("--parent-gb", type=int, default=120)
-    parser.add_argument("--edge-1-sizes-gb", default="6,12,24,48,96,120")
+    parser.add_argument("--edge-1-gb", type=int, default=24)
     parser.add_argument("--edge-2-gb", type=int, default=24)
+    parser.add_argument("--parent-sizes-gb", default="12,24,48,96,120")
     parser.add_argument("--assume-sorted", action="store_true")
-    parser.add_argument("--experiment-name", default="two_edge_parent_hitrate")
+    parser.add_argument("--experiment-name", default="two_edge_parent_sweep")
     parser.add_argument("--output-root", default="experiments")
     return parser.parse_args()
 
 
-def parse_edge_sizes(edge_sizes_raw: str) -> list[int]:
-    return [int(value.strip()) for value in edge_sizes_raw.split(",") if value.strip()]
+def parse_parent_sizes(parent_sizes_raw: str) -> list[int]:
+    return [int(value.strip()) for value in parent_sizes_raw.split(",") if value.strip()]
 
 
 def setup_logging(run_dir: Path) -> logging.Logger:
-    logger = logging.getLogger("two_edge_parent_hitrate_experiment")
+    logger = logging.getLogger("two_edge_parent_sweep_experiment")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
 
@@ -100,9 +100,9 @@ def run_single(
 
 
 def build_row(
+    parent_gb: int,
     edge_1_gb: int,
     edge_2_gb: int,
-    parent_gb: int,
     metrics: dict[str, float],
 ) -> dict[str, float]:
     total_requests = metrics["total_requests"]
@@ -116,9 +116,9 @@ def build_row(
     edge_2_parent_hits = metrics["edge_2_parent_hits"]
 
     return {
+        "parent_gb": parent_gb,
         "edge_1_gb": edge_1_gb,
         "edge_2_gb": edge_2_gb,
-        "parent_gb": parent_gb,
         "total_requests": total_requests,
         "edge_hits": edge_hits,
         "edge_misses": metrics["edge_misses"],
@@ -158,9 +158,9 @@ def build_row(
 
 def save_csv(rows: list[dict[str, float]], output_path: Path) -> None:
     fieldnames = [
+        "parent_gb",
         "edge_1_gb",
         "edge_2_gb",
-        "parent_gb",
         "total_requests",
         "edge_hits",
         "edge_misses",
@@ -194,8 +194,8 @@ def save_csv(rows: list[dict[str, float]], output_path: Path) -> None:
         writer.writerows(rows)
 
 
-def save_plot(rows: list[dict[str, float]], edge_2_gb: int, parent_gb: int, output_path: Path) -> None:
-    x = [int(row["edge_1_gb"]) for row in rows]
+def save_plot(rows: list[dict[str, float]], edge_1_gb: int, edge_2_gb: int, output_path: Path) -> None:
+    x = [int(row["parent_gb"]) for row in rows]
     parent_hit_rates = [row["parent_hit_rate"] for row in rows]
     edge_1_parent_hit_rates = [row["edge_1_parent_hit_rate"] for row in rows]
     edge_2_parent_hit_rates = [row["edge_2_parent_hit_rate"] for row in rows]
@@ -210,7 +210,7 @@ def save_plot(rows: list[dict[str, float]], edge_2_gb: int, parent_gb: int, outp
 
     fig, axes = plt.subplots(2, 2, figsize=(13, 9))
     fig.suptitle(
-        f"Two-Edge Parent Hit-Rate Sweep\n(Edge 2 fixed at {edge_2_gb} GB, Parent fixed at {parent_gb} GB)",
+        f"Two-Edge Parent Sweep\n(Edge 1 fixed at {edge_1_gb} GB, Edge 2 fixed at {edge_2_gb} GB)",
         fontsize=13,
         fontweight="bold",
     )
@@ -264,7 +264,7 @@ def save_plot(rows: list[dict[str, float]], edge_2_gb: int, parent_gb: int, outp
         ax.set_xticks(x)
         ax.set_xticklabels([str(size) for size in x])
         ax.set_ylim(0, 1)
-        ax.set_xlabel("Edge 1 Disk Size (GB)")
+        ax.set_xlabel("Parent Disk Size (GB)")
         ax.set_ylabel(ylabel)
         ax.set_title(title)
         ax.grid(True, which="both", alpha=0.3)
@@ -277,52 +277,52 @@ def save_plot(rows: list[dict[str, float]], edge_2_gb: int, parent_gb: int, outp
 
 def main() -> None:
     args = parse_args()
-    edge_1_sizes_gb = parse_edge_sizes(args.edge_1_sizes_gb)
+    parent_sizes_gb = parse_parent_sizes(args.parent_sizes_gb)
     trace_names = [Path(trace_file).name for trace_file in args.trace_files]
     run_dir = Path(args.output_root) / args.experiment_name / (
         "trace_"
         f"{trace_names[0]}_{trace_names[1]}_"
-        f"parent_{args.parent_gb}GB_"
-        f"edge1_{min(edge_1_sizes_gb)}-{max(edge_1_sizes_gb)}GB_"
+        f"parents_{min(parent_sizes_gb)}-{max(parent_sizes_gb)}GB_"
+        f"edge1_{args.edge_1_gb}GB_"
         f"edge2_{args.edge_2_gb}GB"
     )
     os.makedirs(run_dir, exist_ok=True)
     logger = setup_logging(run_dir)
 
-    logger.info("Starting two-edge parent hit-rate sweep")
+    logger.info("Starting two-edge parent sweep")
     logger.info("Trace files: %s", ", ".join(args.trace_files))
     logger.info(
-        "Capacities: edge_2=%d GB fixed, parent=%d GB fixed, edge_1 sweep=%s",
+        "Capacities: edge_1=%d GB fixed, edge_2=%d GB fixed, parent sweep=%s",
+        args.edge_1_gb,
         args.edge_2_gb,
-        args.parent_gb,
-        ",".join(str(size) for size in edge_1_sizes_gb),
+        ",".join(str(size) for size in parent_sizes_gb),
     )
 
     rows: list[dict[str, float]] = []
     run_summaries: list[dict[str, object]] = []
-    parent_bytes = args.parent_gb * GB
+    edge_1_bytes = args.edge_1_gb * GB
     edge_2_bytes = args.edge_2_gb * GB
     overlap_metadata: dict[str, object] | None = None
 
-    for edge_1_gb in edge_1_sizes_gb:
+    for parent_gb in parent_sizes_gb:
         logger.info(
             "Running edge_1=%d GB, edge_2=%d GB, parent=%d GB",
-            edge_1_gb,
+            args.edge_1_gb,
             args.edge_2_gb,
-            args.parent_gb,
+            parent_gb,
         )
         metrics, metadata = run_single(
             trace_files=args.trace_files,
-            parent_bytes=parent_bytes,
-            edge_1_bytes=edge_1_gb * GB,
+            parent_bytes=parent_gb * GB,
+            edge_1_bytes=edge_1_bytes,
             edge_2_bytes=edge_2_bytes,
             assume_sorted=args.assume_sorted,
         )
         overlap_metadata = metadata # type: ignore
-        row = build_row(edge_1_gb, args.edge_2_gb, args.parent_gb, metrics)
+        row = build_row(parent_gb, args.edge_1_gb, args.edge_2_gb, metrics)
         rows.append(row)
         run_summaries.append({
-            "edge_1_gb": edge_1_gb,
+            "parent_gb": parent_gb,
             "metrics": metrics,
         })
         logger.info(
@@ -346,9 +346,9 @@ def main() -> None:
 
     config = {
         "trace_files": args.trace_files,
-        "parent_gb": args.parent_gb,
-        "edge_1_sizes_gb": edge_1_sizes_gb,
+        "edge_1_gb": args.edge_1_gb,
         "edge_2_gb": args.edge_2_gb,
+        "parent_sizes_gb": parent_sizes_gb,
         "assume_sorted": args.assume_sorted,
         "experiment_name": args.experiment_name,
         "output_root": args.output_root,
@@ -358,8 +358,8 @@ def main() -> None:
         json.dump(config, config_file, indent=2)
 
     base_name = (
-        f"two_edge_parent_hitrate_{trace_names[0]}_{trace_names[1]}_"
-        f"parent_{args.parent_gb}GB_edge2_{args.edge_2_gb}GB"
+        f"two_edge_parent_sweep_{trace_names[0]}_{trace_names[1]}_"
+        f"edge1_{args.edge_1_gb}GB_edge2_{args.edge_2_gb}GB"
     )
     csv_path = run_dir / f"{base_name}.csv"
     json_path = run_dir / f"{base_name}.json"
@@ -368,7 +368,7 @@ def main() -> None:
     save_csv(rows, csv_path)
     with open(json_path, "w", encoding="utf-8") as json_file:
         json.dump(run_summaries, json_file, indent=2)
-    save_plot(rows, args.edge_2_gb, args.parent_gb, plot_path)
+    save_plot(rows, args.edge_1_gb, args.edge_2_gb, plot_path)
 
     logger.info("Saved raw CSV: %s", csv_path)
     logger.info("Saved raw JSON: %s", json_path)

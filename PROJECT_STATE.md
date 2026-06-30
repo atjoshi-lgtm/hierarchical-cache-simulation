@@ -9,7 +9,8 @@ This repository implements a trace-driven, 2-tier CDN cache simulator (Client ->
 - Simulate one or more edge caches feeding one shared parent cache with strict common-window alignment.
 - Merge multi-edge requests deterministically by edge index order for equal timestamps.
 - Emit structured progress logs during long multi-edge runs.
-- Run a two-edge experiment that sweeps edge_1 disk size while holding edge_2 and parent fixed, and report aggregate plus per-stream parent hit rates.
+- Run a two-edge experiment that sweeps edge_1 disk size while holding edge_2 and parent fixed, and produce raw metrics plus one 2x2 composite plot with parent hit rates, per-edge edge hit rates, aggregate/per-edge global hit rates, and aggregate/per-edge duplication byte rates.
+- Run a two-edge experiment that sweeps parent disk size while holding edge_1 and edge_2 fixed, with the same raw metrics and 2x2 composite plot families.
 - Analyze weighted overlap between two traces across time buckets with directional fractions and weighted Jaccard for both request and byte views.
 - Analyze one trace and produce:
   - summary metrics JSON
@@ -28,6 +29,11 @@ Run from repository root after activating virtual environment.
 source venv/bin/activate
 python -m pip install -e .
 ```
+
+Smoke-test traces:
+
+- Always use the tiny files `data/trace_A_smoke` and `data/trace_B_smoke` for smoke tests, especially multi-edge, two-edge, and parent-sweep CLI checks.
+- Do not use the large `data/three_edges/trace_A` and `data/three_edges/trace_B` files for smoke tests; reserve them for real experiment runs.
 
 Single simulation run:
 
@@ -61,7 +67,7 @@ Multi-edge simulation run:
 
 ```bash
 python -m scripts.run_multi_edge_simulation \
-  --trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 data/three_edges/request_seq_edge_3 \
+  --trace-files data/three_edges/trace_A data/three_edges/trace_B data/three_edges/trace_C \
   --edge-gb 24 \
   --parent-gb 120 \
   --experiment-name multi_edge_run
@@ -71,18 +77,29 @@ Two-edge parent hit-rate sweep run:
 
 ```bash
 python -m scripts.two_edge_parent_hitrate_experiment \
-  --trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 \
+  --trace-files data/three_edges/trace_A data/three_edges/trace_B \
   --edge-1-sizes-gb 6,12,24,48,96,120 \
   --edge-2-gb 24 \
   --parent-gb 120 \
   --experiment-name two_edge_parent_hitrate
 ```
 
+Two-edge parent-size sweep run:
+
+```bash
+python -m scripts.two_edge_parent_sweep_experiment \
+  --trace-files data/three_edges/trace_A data/three_edges/trace_B \
+  --edge-1-gb 24 \
+  --edge-2-gb 12 \
+  --parent-sizes-gb 12,24,48,96,120 \
+  --experiment-name two_edge_parent_sweep
+```
+
 Two-trace weighted overlap analysis run:
 
 ```bash
 python -m scripts.analyze_two_trace_weighted_overlap \
-  --trace-files data/three_edges/request_seq_edge_1 data/three_edges/request_seq_edge_2 \
+  --trace-files data/three_edges/trace_A data/three_edges/trace_B \
   --num-buckets 24 \
   --experiment-name two_trace_weighted_overlap
 ```
@@ -104,6 +121,7 @@ Core simulation counters (from engine output):
 - duplication_byte_rate
 
 Additional multi-edge counters:
+- edge_i_total_requests
 - edge_1_hits/edge_1_misses/edge_1_evictions
 - edge_2_hits/edge_2_misses/edge_2_evictions
 - edge_3_hits/edge_3_misses/edge_3_evictions
@@ -112,10 +130,13 @@ Additional multi-edge counters:
 - duplication_overlap_union_bytes
 - edge_i_parent_overlap_bytes and edge_i_duplication_byte_rate
 
-Two-edge sweep outputs additionally surface these parent hit-rate series per row:
+Two-edge sweep outputs additionally surface these plotted rate series per row:
 - parent_hit_rate
 - edge_1_parent_hit_rate
 - edge_2_parent_hit_rate
+- edge_1_hit_rate, edge_2_hit_rate
+- global_hit_rate, edge_1_global_hit_rate, edge_2_global_hit_rate
+- duplication_byte_rate, edge_1_duplication_byte_rate, edge_2_duplication_byte_rate
 
 Two-trace weighted overlap outputs expose per-bucket overlap metrics:
 - req_frac_a_to_b, req_frac_b_to_a, req_jaccard
@@ -132,7 +153,12 @@ Definitions used by the sweep script:
 - edge_hit_rate = edge_hits / total_requests
 - parent_hit_rate = parent_hits / edge_misses
 - global_hit_rate = (edge_hits + parent_hits) / total_requests
-- duplication_byte_rate = overlapping_parent_bytes_with_edge / parent_current_bytes
+- duplication_byte_rate = duplication_overlap_union_bytes / parent_current_bytes
+- duplication_overlap_union_bytes = bytes currently in parent that also exist in at least one edge cache (union over edges)
+- edge_i_parent_hit_rate = edge_i_parent_hits / (edge_i_parent_hits + edge_i_parent_misses)
+- edge_i_hit_rate = edge_i_hits / edge_i_total_requests
+- edge_i_global_hit_rate = (edge_i_hits + edge_i_parent_hits) / edge_i_total_requests
+- edge_i_duplication_byte_rate = edge_i_parent_overlap_bytes / parent_current_bytes
 
 ## Current Experiment Scope
 - Trace input: configurable, default is data/request_seq_small.
@@ -142,6 +168,8 @@ Definitions used by the sweep script:
 - Multi-edge tie-break policy at equal timestamp is deterministic edge order (1 -> 2 -> 3 -> ...).
 - Multi-edge CLI supports progress control using `--log-every` and merge strategy with `--assume-sorted`.
 - Two-edge sweep varies edge_1 size while holding edge_2 and parent fixed.
+- Two-edge sweep writes one composite 2x2 PNG with metric-family subplots: parent hit rates, per-edge edge hit rates, aggregate/per-edge global hit rates, and aggregate/per-edge duplication byte rates.
+- Two-edge parent sweep varies parent size while holding edge_1 and edge_2 fixed, and writes the same composite 2x2 PNG with parent size on the x-axis.
 - Two-trace weighted overlap analysis uses pairwise common window only and equal-width timestamp buckets with potentially shorter final bucket.
 - Sweep script currently varies Edge size over a provided list while holding Parent fixed.
 - Duplication metric currently reported as final-state overlap ratio at run end.
@@ -164,6 +192,9 @@ Multi-edge directory pattern:
 Two-edge parent hit-rate sweep directory pattern:
 - experiments/<experiment_name>/trace_<edge_1_trace>_<edge_2_trace>_parent_<parent>GB_edge1_<min>-<max>GB_edge2_<edge_2>GB/
 
+Two-edge parent-size sweep directory pattern:
+- experiments/<experiment_name>/trace_<edge_1_trace>_<edge_2_trace>_parents_<min>-<max>GB_edge1_<edge_1>GB_edge2_<edge_2>GB/
+
 Two-trace weighted overlap directory pattern:
 - experiments/<experiment_name>/trace_<trace_a>_<trace_b>_buckets_<actual_bucket_count>/
 
@@ -181,22 +212,23 @@ Typical artifacts per run:
 - src/simulator/engine/multi_edge_orchestrator.py: multi-edge shared-parent orchestration and multi-edge metrics.
 - scripts/run_simulation_demo.py: reproducible single-configuration simulation entry point.
 - scripts/run_multi_edge_simulation.py: reproducible multi-edge simulation entry point with progress logging.
-- scripts/two_edge_parent_hitrate_experiment.py: two-edge sweep entry point for aggregate and per-stream parent hit rates.
+- scripts/two_edge_parent_hitrate_experiment.py: two-edge sweep entry point with expanded per-edge/aggregate rate outputs and a 2x2 composite plot.
+- scripts/two_edge_parent_sweep_experiment.py: two-edge parent-size sweep entry point with expanded per-edge/aggregate rate outputs and a 2x2 composite plot.
 - scripts/analyze_two_trace_weighted_overlap.py: two-trace bucketed weighted-overlap analyzer with directional and Jaccard metrics.
 - scripts/analyze_trace.py: trace summary + popularity distribution artifacts, including size-weighted request-capture-by-bytes outputs.
 - scripts/edge_sweep_experiment.py: fixed-parent edge sweep experiment and 4-metric plot.
 
 ## Known Gaps / Cleanup Items
 - Multi-edge default merge path sorts in-window records in memory to handle unsorted traces; this can increase memory use for very large overlap windows.
-- Parent-size sweep wrapper for multi-edge path is still pending.
 - experiments/ currently contains top-level PNG files from earlier runs; newer scripts now use nested experiment directories.
 
 ## Immediate Next Priorities
-1. Add a parent-size sweep wrapper for the multi-edge path.
-2. Add optional external-sort/pre-sort utilities for large multi-edge windows.
-3. Add comparison plotting for per-edge and aggregate multi-edge metrics.
+1. Add optional external-sort/pre-sort utilities for large multi-edge windows.
+2. Add comparison plotting for per-edge and aggregate multi-edge metrics.
 
 ## Quick Handoff Notes for Human or AI
 - Read this file first, then run one canonical command above to validate environment.
+- For smoke tests, always use `data/trace_A_smoke` and `data/trace_B_smoke`.
+- Do not edit `docs/analysis_latex/` during general documentation updates; only update those LaTeX files when explicitly asked.
 - Treat AGENT.md as policy constraints (output structure, raw-data persistence, reproducibility).
 - Keep this file as current-state only; do not append chronological build history.
